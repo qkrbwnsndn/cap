@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Distance Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <h1>쓰레기통 포화상태</h1>
+    <canvas id="myChart" width="400" height="400"></canvas>
+    <p id="warningMessage"></p> <!-- 경고 메시지를 표시할 부분 -->
+    <script>
+        const ctx = document.getElementById('myChart').getContext('2d');
+
+        let distance = 0;  // 초음파 센서 값
+        let percentage = 100;  // 계산된 퍼센트 값
+
+        const data = {
+            labels: ['Distance'],
+            datasets: [{
+                label: 'Sensor Distance',
+                data: [percentage],
+                backgroundColor: ['rgba(75, 192, 192, 0.2)'],
+                borderColor: ['rgba(75, 192, 192, 1)'],
+                borderWidth: 1
+            }]
+        };
+
+        const config = {
+            type: 'doughnut',
+            data: data,
+            options: {
+                circumference: Math.PI,
+                rotation: Math.PI,
+                responsive: true,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        };
+
+        const myChart = new Chart(ctx, config);
+
+        // ThingSpeak에서 데이터를 가져와서 그래프를 업데이트
+        async function fetchData() {
+            // ThingSpeak API URL (읽기 API 키 포함)
+            const response = await fetch('https://api.thingspeak.com/channels/2756484/fields/1/last.json?api_key=6MYLVIP1385DNSX5');
+            const data = await response.json();
+            distance = data.field1;  // 'field1' 데이터 읽기
+
+            // 초음파 센서 값에 따라 퍼센트 계산 (0cm -> 100%, 36cm -> 0%)
+            percentage = Math.max(0, Math.min(100, ((36 - distance) / 36) * 100));
+
+            // "쓰레기통을 비워주세요" 문구 추가 (80% 이상일 경우)
+            const warningMessage = document.getElementById('warningMessage');
+            if (percentage >= 80) {
+                warningMessage.textContent = "쓰레기통을 비워주세요!";
+            } else {
+                warningMessage.textContent = "";  // 경고 메시지 초기화
+            }
+
+            // 원형 그래프 업데이트
+            myChart.data.datasets[0].data = [percentage];
+            myChart.update();
+        }
+
+        setInterval(fetchData, 3000); // 3초마다 데이터 갱신
+    </script>
+</body>
+</html>
