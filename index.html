@@ -6,51 +6,69 @@
     <title>Distance Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Canvas 크기를 자동으로 조정 */
-        #myChart {
-            width: 100%;
-            max-width: 400px; /* 최대 너비 400px */
-            height: auto;
+        /* 전체를 가운데 정렬 */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            flex-direction: column;
+        }
+
+        /* 그래프 컨테이너 스타일 */
+        .chart-container {
+            position: relative;
+            width: 400px;
+            height: 400px;
+        }
+
+        /* 중앙 텍스트 스타일 */
+        #cap {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%); /* 중앙 정렬 */
+            font-size: 70px;
+            font-family: Arial, sans-serif;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <h1>쓰레기통 포화상태</h1>
-    <canvas id="myChart"></canvas>
+    <div class="chart-container">
+        <canvas id="myChart"></canvas>
+        <div id="cap">-'C</div>
+    </div>
     <p id="warningMessage"></p> <!-- 경고 메시지를 표시할 부분 -->
     <script>
-        const ctx = document.getElementById('myChart').getContext('2d');
-
+        // 초기값 설정
         let distance = 0;  // 초음파 센서 값
         let percentage = 100;  // 계산된 퍼센트 값
+        const max_value = 36; // 최대 거리 (센서 값의 최대 범위)
 
-        const data = {
-            labels: ['Distance'],
-            datasets: [{
-                label: 'Sensor Distance',
-                data: [percentage],
-                backgroundColor: ['rgba(75, 192, 192, 0.2)'],
-                borderColor: ['rgba(75, 192, 192, 1)'],
-                borderWidth: 1
-            }]
-        };
-
-        const config = {
+        // 차트 설정
+        const ctx = document.getElementById('myChart').getContext('2d');
+        const chart = new Chart(ctx, {
             type: 'doughnut',
-            data: data,
+            data: {
+                labels: [],
+                datasets: [{
+                    label: '',
+                    data: [percentage],  // 퍼센트 값만 표시
+                    backgroundColor: ['rgba(0, 128, 0, 0.6)'], // 기본 초록색
+                    borderColor: ['rgba(0, 128, 0, 1)'],
+                    borderWidth: 1
+                }]
+            },
             options: {
-                circumference: 2 * Math.PI,  // 원형 그래프 전체 그리기
-                rotation: -Math.PI,  // 그래프 시작 위치 조정
                 responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
+                legend: { display: false }, // 범례 숨기기
+                maintainAspectRatio: false,
+                cutoutPercentage: 70, // 도넛 형태로 만들기
             }
-        };
-
-        const myChart = new Chart(ctx, config);
+        });
 
         // ThingSpeak에서 데이터를 가져와서 그래프를 업데이트
         async function fetchData() {
@@ -60,22 +78,29 @@
             distance = data.field1;  // 'field1' 데이터 읽기
 
             // 초음파 센서 값에 따라 퍼센트 계산 (0cm -> 100%, 36cm -> 0%)
-            percentage = Math.max(0, Math.min(100, ((36 - distance) / 36) * 100));
+            percentage = Math.max(0, Math.min(100, ((max_value - distance) / max_value) * 100));
 
-            // "쓰레기통을 비워주세요" 문구 추가 (80% 이상일 경우)
+            // 경고 메시지 (80% 이상일 경우)
             const warningMessage = document.getElementById('warningMessage');
             if (percentage >= 80) {
                 warningMessage.textContent = "쓰레기통을 비워주세요!";
+                chart.data.datasets[0].backgroundColor = ['rgba(255, 0, 0, 0.6)']; // 빨간색
+                chart.data.datasets[0].borderColor = ['rgba(255, 0, 0, 1)'];
             } else {
                 warningMessage.textContent = "";  // 경고 메시지 초기화
+                chart.data.datasets[0].backgroundColor = ['rgba(0, 128, 0, 0.6)']; // 초록색
+                chart.data.datasets[0].borderColor = ['rgba(0, 128, 0, 1)'];
             }
 
-            // 원형 그래프 업데이트
-            myChart.data.datasets[0].data = [percentage];
-            myChart.update();
+            // 중앙 텍스트 업데이트
+            document.getElementById("cap").innerHTML = `${Math.round(percentage)}%`; 
+
+            // 차트 데이터 업데이트
+            chart.data.datasets[0].data = [percentage];
+            chart.update(); // 차트 갱신
         }
 
-        setInterval(fetchData, 20000); // 20초마다 데이터 갱신 
+        setInterval(fetchData, 20000); // 20초마다 데이터 갱신
     </script>
 </body>
 </html>
