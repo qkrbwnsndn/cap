@@ -45,7 +45,7 @@
     </style>
 </head>
 <body>
-    <h1>쓰레기통 포화상태</h1>
+    <h1>쓰레기통 잔량상태</h1>
     <div class="chart-container">
         <canvas id="myChart"></canvas>
         <div id="cap">-'C</div>
@@ -55,7 +55,7 @@
         // 초기값 설정
         let distance = 0;  // 초음파 센서 값
         let percentage = 100;  // 계산된 퍼센트 값
-        const max_value = 36; // 최대 거리 (센서 값의 최대 범위)
+        const max_value = 37; // 최대 거리 (센서 값의 최대 범위)
 
         // 차트 설정
         const ctx = document.getElementById('myChart').getContext('2d');
@@ -86,7 +86,7 @@
             const data = await response.json();
             distance = data.field1;  // 'field1' 데이터 읽기
 
-            // 초음파 센서 값에 따라 퍼센트 계산 (0cm -> 100%, 36cm -> 0%)
+            // 초음파 센서 값에 따라 퍼센트 계산 (0cm -> 100%, 37cm -> 0%)
             percentage = Math.max(0, Math.min(100, ((max_value - distance) / max_value) * 100));
 
             // 경고 메시지 (80% 이상일 경우)
